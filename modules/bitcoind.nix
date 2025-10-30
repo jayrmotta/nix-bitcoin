@@ -12,8 +12,8 @@ let
       };
       port = mkOption {
         type = types.port;
-        default = if !cfg.regtest then 8333 else 18444;
-        defaultText = "if !cfg.regtest then 8333 else 18444";
+        default = if cfg.signet then 38333 else if !cfg.regtest then 8333 else 18444;
+        defaultText = "if cfg.signet then 38333 else if !cfg.regtest then 8333 else 18444";
         description = "Port to listen for peer connections.";
       };
       onionPort = mkOption {
@@ -93,8 +93,8 @@ let
         };
         port = mkOption {
           type = types.port;
-          default = if !cfg.regtest then 8332 else 18443;
-          defaultText = "if !cfg.regtest then 8332 else 18443";
+          default = if cfg.signet then 38332 else if !cfg.regtest then 8332 else 18443;
+          defaultText = "if cfg.signet then 38332 else if !cfg.regtest then 8332 else 18443";
           description = "Port to listen for JSON-RPC connections.";
         };
         threads = mkOption {
@@ -160,9 +160,20 @@ let
         default = false;
         description = "Enable regtest mode.";
       };
+      signet = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Enable signet mode.";
+      };
+      signetChallenge = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "51210276f2aeba2bd... OP_CHECKSIG";
+        description = "Custom signet challenge (script) when using signet.";
+      };
       network = mkOption {
         readOnly = true;
-        default = if cfg.regtest then "regtest" else "mainnet";
+        default = if cfg.regtest then "regtest" else if cfg.signet then "signet" else "mainnet";
       };
       makeNetworkName = mkOption {
         readOnly = true;
@@ -302,6 +313,11 @@ let
       regtest=1
       [regtest]
     ''}
+    ${optionalString cfg.signet ''
+      signet=1
+      [signet]
+      ${optionalString (cfg.signetChallenge != null) "signetchallenge=${cfg.signetChallenge}"}
+    ''}
     ${optionalString (cfg.dbCache != null) "dbcache=${toString cfg.dbCache}"}
     prune=${toString cfg.prune}
     ${optionalString cfg.txindex "txindex=1"}
@@ -360,6 +376,12 @@ in {
 
   config = mkIf cfg.enable {
     environment.systemPackages = [ cfg.package (hiPrio cfg.cli) ];
+    assertions = [
+      {
+        assertion = !(cfg.regtest && cfg.signet);
+        message = "services.bitcoind: 'regtest' and 'signet' cannot both be enabled";
+      }
+    ];
 
     services.bitcoind = mkMerge [
       (mkIf cfg.dataDirReadableByGroup {
@@ -432,9 +454,9 @@ in {
 
       # Enable RPC access for group
       postStart = ''
-        chmod g=r '${cfg.dataDir}/${optionalString cfg.regtest "regtest/"}.cookie'
-      '' + (optionalString cfg.regtest) ''
-        chmod g=x '${cfg.dataDir}/regtest'
+        chmod g=r '${cfg.dataDir}/${optionalString (cfg.regtest || cfg.signet) (if cfg.signet then "signet/" else "regtest/")}.cookie'
+      '' + (optionalString (cfg.regtest || cfg.signet)) ''
+        chmod g=x '${cfg.dataDir}/${if cfg.signet then "signet" else "regtest"}'
       '';
 
       serviceConfig = nbLib.defaultHardening // {

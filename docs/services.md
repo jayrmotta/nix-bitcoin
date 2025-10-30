@@ -128,6 +128,20 @@ yourself with custom permissions.
 Normally you would connect to RTL via SSH tunneling with a command like this
 
 ```
+
+## Bitcoind signet
+
+Enable signet and optionally set a custom challenge:
+
+```nix
+services.bitcoind = {
+  enable = true;
+  signet = true;
+  # Optional: provide a custom signet challenge script
+  # signetChallenge = "51210276f2aeba2bd... OP_CHECKSIG";
+};
+```
+This sets P2P port to 38333 and RPC port to 38332 by default. `regtest` and `signet` cannot be enabled together.
 ssh -L 3000:127.0.0.1:3000 root@bitcoin-node
 ```
 

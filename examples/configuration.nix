@@ -32,6 +32,12 @@
   ### BITCOIND
   # Bitcoind is enabled by default via secure-node.nix.
   #
+  # Enable signet network and optionally set a custom challenge script.
+  # services.bitcoind = {
+  #   signet = true;
+  #   # signetChallenge = "51210276f2aeba2bd... OP_CHECKSIG";
+  # };
+  #
   # Set this option to enable pruning with a specified MiB value.
   # clightning is compatible with pruning. See
   # https://github.com/ElementsProject/lightning/#pruning for more information.
