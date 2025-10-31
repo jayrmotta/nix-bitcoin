@@ -93,9 +93,9 @@ in {
           || !config.services.electrs.enable
           || config.services.electrs.port != cfg.port;
         message = ''
-          Fulcrum and Electrs can't both bind to TCP RPC port ${cfg.port}.
+          Fulcrum and Electrs can't both bind to TCP RPC port ${toString cfg.port}.
           Change `services.electrs.port` or `services.fulcrum.port`
-          to a port other than ${cfg.port}.
+          to a port other than ${toString cfg.port}.
         '';
       }
     ];
